@@ -1,0 +1,24 @@
+{
+  "name": "awcy_bot",
+  "version": "1.0.0",
+  "description": "awcy bot",
+  "main": "bin/awcybot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node bin/awcybot.js"
+  },
+  "bin": {
+    "awcybot": "bin/awcybot.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "keybase://private/dtgz/awcy_bot"
+  },
+  "author": "dtgz",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "keybase-bot": "^3.6.1",
+    "regex-escape": "^3.4.10"
+  }
+}
