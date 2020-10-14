@@ -30,7 +30,7 @@ async function main() {
         if (msg.content.type !== "text" || !msg.content.text.body.startsWith("!")) {
             return;
         }
-        console.log('message recieved: ')
+        console.log('message recieved: '+msg.sender.name)
         const isAdmin = adminIds.some(aId => aId === msg.sender.uid);
         const isTeamChat = msg.channel.name === teamName;
 
@@ -42,7 +42,7 @@ async function main() {
             const match = msg.content.text.body.match(cmd.re);
             if(match) {
                 if (!cmd.adminOnly || isAdmin) {
-                    cmd.handle(bot, msg, match);
+                    cmd.handle(msg, match, bot);
                 } else {
                     await bot.chat.send(msg.conversationId, {
                         body: "nah"

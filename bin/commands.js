@@ -4,7 +4,7 @@ exports.adduser = {
         description: "add a new member",
         usage: '[@username]',
         adminOnly: true,
-        handle: async (bot, msg, match) => {
+        handle: async (msg, match, bot) => {
             await bot.team.addMembers({
                 team: teamName,
                 usernames: [{username: match.groups["username"], role: "reader"}]
