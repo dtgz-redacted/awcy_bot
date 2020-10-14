@@ -5,6 +5,11 @@ const keybaseExec = require("keybase-bot/lib/utils/keybaseExec").default;
 const regexEscape = require("regex-escape");
 const timers = require("timers");
 
+const username = process.env.KB_USERNAME;
+const paperkey = process.env.KB_PAPERKEY;
+const teamName = process.env.KB_TEAMNAME;
+const contentFolder = process.env.KB_CONTENT;
+
 const bot = new Bot();
 
 let content = {};
@@ -18,7 +23,7 @@ const builtinCommands = {
         adminOnly: true,
         handle: async (msg, match) => {
             await bot.team.addMembers({
-                team: process.env.TEAM_NAME,
+                team: teamName,
                 usernames: [{username: match.groups["username"], role: "reader"}]
             });
         }
@@ -26,7 +31,10 @@ const builtinCommands = {
 };
 
 async function main() {
-    await bot.init(process.env.KEYBASE_USERNAME, process.env.PAPER_KEY);
+    console.log('initiating bot...')
+    await bot.init(username, paperkey);
+    console.log('bot started!')
+    console.log('watching all channels for messages!');
     await updateAppData();
     timers.setInterval(updateAppData, 300000);
 
@@ -34,9 +42,9 @@ async function main() {
         if (msg.content.type !== "text" || !msg.content.text.body.startsWith("!")) {
             return;
         }
-
+        console.log('message recieved: ')
         const isAdmin = adminIds.some(aId => aId === msg.sender.uid);
-        const isTeamChat = msg.channel.name === process.env.TEAM_NAME;
+        const isTeamChat = msg.channel.name === teamName;
 
         if (!isAdmin && !isTeamChat) {
             return;
@@ -66,14 +74,39 @@ async function updateAppData() {
 }
 
 async function updateAdminIds() {
-    const result = await bot.team.listTeamMemberships({team: process.env.TEAM_NAME});
-    adminIds = [
-        ...result.members.admins.map(it => it.uv.uid),
-        ...result.members.owners.map(it => it.uv.uid)
-    ];
+    console.log('Updating Admin and Owners List...')
+    const result = await bot.team.listTeamMemberships({team: teamName});
+    //console.log(result.members.admins);
+    //console.log(result.members.owners);
+    if (!result.members.admins && !result.members.owners){
+      console.log("error no admins or owners found!");
+      return;
+   }
+   let sowner = result.members.owners;
+   let sadmin = result.members.admins;
+   if (sadmin == null) {
+     adminIds = [
+         ...sowner.map(it => it.uv.uid)
+     ];
+    return;
+   }
+   if (sowners == null) {
+     adminIds = [
+         ...sadmins.map(it => it.uv.uid)
+     ];
+    return;
+   }
+   else {
+     adminIds = [
+         ...sadmins.map(it => it.uv.uid),
+         ...sowners.map(it => it.uv.uid)
+     ];
+    return;
+   }
 }
 
 async function updateCommands() {
+    console.log('updating commands...')
     let nCommands = {};
     for (const contentKey in content) {
         nCommands = {
@@ -107,9 +140,11 @@ async function updateCommands() {
 }
 
 async function updateContent() {
+    console.log('updating content...')
     const workingDir = bot["_workingDir"];
+    //console.log(`/keybase/team/${teamName}/${contentFolder}`)
     const fileList = (await keybaseExec(workingDir, null,
-        ["fs", "ls", `/keybase/team/${process.env.TEAM_NAME}/${process.env.CONTENT_FOLDER}`, "--one"]))
+        ["fs", "ls", `/keybase/team/${teamName}/${contentFolder}`, "--one"]))
         .split("\n")
         .filter(it => !!it);
 
@@ -124,7 +159,7 @@ async function updateContent() {
 async function readFile(fileName) {
     const workingDir = bot["_workingDir"];
     return await keybaseExec(workingDir, null,
-        ["fs", "read", `/keybase/team/${process.env.TEAM_NAME}/${process.env.CONTENT_FOLDER}/${fileName}`]);
+        ["fs", "read", `/keybase/team/${teamName}/${contentFolder}/${fileName}`]);
 }
 
 async function exit() {
