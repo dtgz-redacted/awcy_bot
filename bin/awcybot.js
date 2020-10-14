@@ -76,33 +76,16 @@ async function updateAppData() {
 async function updateAdminIds() {
     console.log('Updating Admin and Owners List...')
     const result = await bot.team.listTeamMemberships({team: teamName});
-    //console.log(result.members.admins);
-    //console.log(result.members.owners);
     if (!result.members.admins && !result.members.owners){
       console.log("error no admins or owners found!");
       return;
    }
    let sowner = result.members.owners;
    let sadmin = result.members.admins;
-   if (sadmin == null) {
-     adminIds = [
-         ...sowner.map(it => it.uv.uid)
-     ];
-    return;
-   }
-   if (sowners == null) {
-     adminIds = [
-         ...sadmins.map(it => it.uv.uid)
-     ];
-    return;
-   }
-   else {
-     adminIds = [
-         ...sadmins.map(it => it.uv.uid),
-         ...sowners.map(it => it.uv.uid)
-     ];
-    return;
-   }
+   adminIds = [
+       ...(sowner ? sowner.map(it => it.uv.uid) : []),
+       ...(sadmin ? sadmin.map(it => it.uv.uid) : [])
+   ];
 }
 
 async function updateCommands() {
@@ -142,7 +125,6 @@ async function updateCommands() {
 async function updateContent() {
     console.log('updating content...')
     const workingDir = bot["_workingDir"];
-    //console.log(`/keybase/team/${teamName}/${contentFolder}`)
     const fileList = (await keybaseExec(workingDir, null,
         ["fs", "ls", `/keybase/team/${teamName}/${contentFolder}`, "--one"]))
         .split("\n")
