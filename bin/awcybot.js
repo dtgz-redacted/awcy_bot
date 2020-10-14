@@ -4,6 +4,7 @@ const Bot = require("keybase-bot");
 const keybaseExec = require("keybase-bot/lib/utils/keybaseExec").default;
 const regexEscape = require("regex-escape");
 const timers = require("timers");
+const bCommands = require("./commands.js");
 
 const username = process.env.KB_USERNAME;
 const paperkey = process.env.KB_PAPERKEY;
@@ -15,20 +16,7 @@ const bot = new Bot();
 let content = {};
 let commands = {};
 let adminIds = [];
-const builtinCommands = {
-    adduser: {
-        re: /^!adduser @(?<username>\S+)\s*$/,
-        description: "add a new member",
-        usage: '[@username]',
-        adminOnly: true,
-        handle: async (msg, match) => {
-            await bot.team.addMembers({
-                team: teamName,
-                usernames: [{username: match.groups["username"], role: "reader"}]
-            });
-        }
-    }
-};
+
 
 async function main() {
     console.log('initiating bot...')
@@ -54,7 +42,7 @@ async function main() {
             const match = msg.content.text.body.match(cmd.re);
             if(match) {
                 if (!cmd.adminOnly || isAdmin) {
-                    cmd.handle(msg, match);
+                    cmd.handle(bot, msg, match);
                 } else {
                     await bot.chat.send(msg.conversationId, {
                         body: "nah"
@@ -106,7 +94,7 @@ async function updateCommands() {
 
     commands = {
         ...nCommands,
-        ...builtinCommands
+        ...bCommands
     };
 
     await bot.chat.clearCommands();
