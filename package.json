@@ -18,6 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^8.2.0",
+    "imap-simple": "^5.0.0",
     "keybase-bot": "^3.6.1",
     "regex-escape": "^3.4.10"
   }
