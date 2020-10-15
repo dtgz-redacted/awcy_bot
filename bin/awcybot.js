@@ -4,7 +4,9 @@ const Bot = require("keybase-bot");
 const keybaseExec = require("keybase-bot/lib/utils/keybaseExec").default;
 const regexEscape = require("regex-escape");
 const timers = require("timers");
-const bCommands = require("./commands.js");
+const fs = require('fs');
+const path = require('path');
+const cmdLogic = require('./commands/cmdlogic.js');
 
 const username = process.env.KB_USERNAME;
 const paperkey = process.env.KB_PAPERKEY;
@@ -16,7 +18,8 @@ const bot = new Bot();
 let content = {};
 let commands = {};
 let adminIds = [];
-
+let commandCount = 0;
+let otherFunc = 0;
 
 async function main() {
     console.log('initiating bot...')
@@ -30,7 +33,7 @@ async function main() {
         if (msg.content.type !== "text" || !msg.content.text.body.startsWith("!")) {
             return;
         }
-        console.log('message recieved: '+msg.sender.name)
+        console.log('message recieved: '+msg.sender.username)
         const isAdmin = adminIds.some(aId => aId === msg.sender.uid);
         const isTeamChat = msg.channel.name === teamName;
 
@@ -78,8 +81,40 @@ async function updateAdminIds() {
 
 async function updateCommands() {
     console.log('updating commands...')
+    function getcmds(srcpath) {
+      return fs.readdirSync(srcpath);
+    }
+    let cmd_directory = path.join(__dirname, 'commands');
+    let cmds = getcmds(cmd_directory);
+    for (let i = 0; i < cmds.length; i++) {
+      let cmd;
+      try {
+        cmd = require(`${cmd_directory}/${cmds[i]}`);
+      } catch (err) {
+        console.log(`Improper setup of the '${cmds[i]}' command. : ${err}`);
+      }
+      if (cmd) {
+        if ('commands' in cmd) {
+          for (let j = 0; j < cmd.commands.length; j++) {
+            if (cmd.commands[j] in cmd) {
+              cmdLogic.addCommand(cmd.commands[j], cmd[cmd.commands[j]], commands);
+              commandCount++;
+            }
+          }
+        }
+        if ('custom' in cmd) {
+          for (let j = 0; j < cmd.custom.length; j++) {
+            if (cmd.custom[j] in cmd) {
+              cmdLogic.addCustomFunc(cmd[cmd.custom[j]]);
+              otherFunc++;
+            }
+          }
+        }
+      }
+    }
     let nCommands = {};
     for (const contentKey in content) {
+      commandCount++;
         nCommands = {
             ...nCommands,
             [contentKey]: {
@@ -94,7 +129,7 @@ async function updateCommands() {
 
     commands = {
         ...nCommands,
-        ...bCommands
+        ...commands
     };
 
     await bot.chat.clearCommands();
@@ -108,6 +143,7 @@ async function updateCommands() {
             }))
         }]
     });
+    console.log(`Loaded ${cmdLogic.commandCount(commands)} chat commands and ${otherFunc} custom functions.`);
 }
 
 async function updateContent() {
