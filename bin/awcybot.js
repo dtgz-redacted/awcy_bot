@@ -18,14 +18,14 @@ const bot = new Bot();
 let content = {};
 let commands = {};
 let adminIds = [];
-let commandCount = 0;
-let otherFunc = 0;
+let builtInCommands = {};
 
 async function main() {
     console.log('initiating bot...')
     await bot.init(username, paperkey);
     console.log('bot started!')
     console.log('watching all channels for messages!');
+    loadBuiltInCommands();
     await updateAppData();
     timers.setInterval(updateAppData, 300000);
 
@@ -33,7 +33,8 @@ async function main() {
         if (msg.content.type !== "text" || !msg.content.text.body.startsWith("!")) {
             return;
         }
-        console.log('message recieved: '+msg.sender.username)
+
+        console.log('message recieved: ' + msg.sender.username)
         const isAdmin = adminIds.some(aId => aId === msg.sender.uid);
         const isTeamChat = msg.channel.name === teamName;
 
@@ -58,6 +59,45 @@ async function main() {
     }, e => console.error(e));
 }
 
+function loadBuiltInCommands() {
+    console.log("Loading built in commands...");
+
+    let otherFunc = 0;
+    let commandCount = 0;
+    let cmd_directory = path.join(__dirname, 'commands');
+    let cmds = fs.readdirSync(cmd_directory);
+
+    cmds.forEach(cmdFile => {
+        let cmd;
+        try {
+            cmd = require(`${cmd_directory}/${cmdFile}`);
+        } catch (err) {
+            console.error(`Improper setup of the '${cmdFile}' command. : ${err}`);
+            return;
+        }
+
+        if ('commands' in cmd) {
+            cmd.commands.forEach(cmdName => {
+                if (cmdName in cmd) {
+                    cmdLogic.addCommand(cmdName, cmd[cmdName], builtInCommands);
+                    commandCount++;
+                }
+            });
+        }
+
+        if ('custom' in cmd) {
+            cmd.custom.forEach(customName => {
+                if (customName in cmd) {
+                    cmdLogic.addCustomFunc(cmd[customName], bot);
+                    otherFunc++;
+                }
+            });
+        }
+    });
+
+    console.log(`Loaded ${commandCount} chat commands and ${otherFunc} custom functions.`);
+}
+
 async function updateAppData() {
     await updateAdminIds();
     await updateContent();
@@ -68,53 +108,25 @@ async function updateAdminIds() {
     console.log('Updating Admin and Owners List...')
     const result = await bot.team.listTeamMemberships({team: teamName});
     if (!result.members.admins && !result.members.owners){
-      console.log("error no admins or owners found!");
-      return;
-   }
-   let sowner = result.members.owners;
-   let sadmin = result.members.admins;
-   adminIds = [
-       ...(sowner ? sowner.map(it => it.uv.uid) : []),
-       ...(sadmin ? sadmin.map(it => it.uv.uid) : [])
-   ];
+        console.log("error no admins or owners found!");
+        return;
+    }
+
+    let sowner = result.members.owners;
+    let sadmin = result.members.admins;
+    adminIds = [
+        ...(sowner ? sowner.map(it => it.uv.uid) : []),
+        ...(sadmin ? sadmin.map(it => it.uv.uid) : [])
+    ];
 }
 
 async function updateCommands() {
-    console.log('updating commands...')
-    function getcmds(srcpath) {
-      return fs.readdirSync(srcpath);
-    }
-    let cmd_directory = path.join(__dirname, 'commands');
-    let cmds = getcmds(cmd_directory);
-    for (let i = 0; i < cmds.length; i++) {
-      let cmd;
-      try {
-        cmd = require(`${cmd_directory}/${cmds[i]}`);
-      } catch (err) {
-        console.log(`Improper setup of the '${cmds[i]}' command. : ${err}`);
-      }
-      if (cmd) {
-        if ('commands' in cmd) {
-          for (let j = 0; j < cmd.commands.length; j++) {
-            if (cmd.commands[j] in cmd) {
-              cmdLogic.addCommand(cmd.commands[j], cmd[cmd.commands[j]], commands);
-              commandCount++;
-            }
-          }
-        }
-        if ('custom' in cmd) {
-          for (let j = 0; j < cmd.custom.length; j++) {
-            if (cmd.custom[j] in cmd) {
-              cmdLogic.addCustomFunc(cmd[cmd.custom[j]]);
-              otherFunc++;
-            }
-          }
-        }
-      }
-    }
+    console.log('updating txt commands...')
+
     let nCommands = {};
+    let commandCount = 0;
     for (const contentKey in content) {
-      commandCount++;
+        commandCount++;
         nCommands = {
             ...nCommands,
             [contentKey]: {
@@ -129,7 +141,7 @@ async function updateCommands() {
 
     commands = {
         ...nCommands,
-        ...commands
+        ...builtInCommands
     };
 
     await bot.chat.clearCommands();
@@ -143,7 +155,8 @@ async function updateCommands() {
             }))
         }]
     });
-    console.log(`Loaded ${cmdLogic.commandCount(commands)} chat commands and ${otherFunc} custom functions.`);
+
+    console.log(`Updated ${commandCount} txt commands.`);
 }
 
 async function updateContent() {

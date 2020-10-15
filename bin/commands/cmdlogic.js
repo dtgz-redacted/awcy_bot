@@ -2,16 +2,18 @@ exports.addCommand = function(commandName, commandObject, commands) {
   try {
     commands[commandName] = commandObject;
   } catch (err) {
-    console.log('Error addCommand: ' + err);
+    console.error('Error addCommand: ' + err);
   }
 };
-exports.addCustomFunc = function(customFunc) {
+
+exports.addCustomFunc = function(customFunc, bot) {
   try {
     customFunc(bot);
   } catch (err) {
-    console.log('Error addCustomFunc: ' + err);
+    console.error('Error addCustomFunc: ' + err);
   }
 };
+
 exports.commandCount = function(commands) {
   return Object.keys(commands).length;
 };

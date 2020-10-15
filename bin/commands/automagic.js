@@ -1,7 +1,7 @@
 const imap = require("imap-simple");
 const timers = require("timers");
 
-const interval = process.env.EMAIL_INTERVAL;
+const interval = process.env.AUTOMAGIC_INTERVAL;;
 const teamName = process.env.KB_TEAMNAME;
 const subteamName = process.env.AUTOMAGIC_SUBTEAM;
 const emailSettings = {
@@ -22,7 +22,8 @@ const fromRe = /^.*<(?<email>\S+)>$/;
 const subjectRe = /^(?<username>\S+) wants to join team (?<team>\S+)$/;
 const keybaseAddr = "notify@keybase.io";
 
-exports.run = function(bot, getContent) {
+exports.custom = ["automagic"];
+exports.automagic = function(bot) {
     timers.setInterval(async () => {
         const connection = await imap.connect(emailSettings);
         await connection.openBox("INBOX");
