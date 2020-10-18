@@ -1,6 +1,7 @@
 const imap = require("imap-simple");
 const timers = require("timers");
 
+const automagic = process.env.AUTOMAGIC == 1;
 const interval = process.env.AUTOMAGIC_INTERVAL;;
 const teamName = process.env.KB_TEAMNAME;
 const subteamName = process.env.AUTOMAGIC_SUBTEAM;
@@ -23,7 +24,11 @@ const subjectRe = /^(?<username>\S+) wants to join team (?<team>\S+)$/;
 const keybaseAddr = "notify@keybase.io";
 
 exports.custom = ["automagic"];
-exports.automagic = function(bot) {
+exports.automagic = function(bot, getContent) {
+    if (!automagic) {
+        return;
+    }
+
     timers.setInterval(async () => {
         const connection = await imap.connect(emailSettings);
         await connection.openBox("INBOX");
@@ -58,6 +63,14 @@ exports.automagic = function(bot) {
             await bot.team.addMembers({
                 team: `${teamName}.${subteamName}`,
                 usernames: [{username: username, role: "reader"}]
+            });
+
+            await bot.chat.send({
+                name: `${teamName}.${subteamName}`,
+                membersType: "team",
+                topicName:  "general"
+            }, {
+                body: getContent()["waiting_room_welcome"].replace("{username}", username)
             });
         };
 

@@ -6,9 +6,9 @@ exports.addCommand = function(commandName, commandObject, commands) {
   }
 };
 
-exports.addCustomFunc = function(customFunc, bot) {
+exports.addCustomFunc = function(customFunc, bot, getContent) {
   try {
-    customFunc(bot);
+    customFunc(bot, getContent);
   } catch (err) {
     console.error('Error addCustomFunc: ' + err);
   }

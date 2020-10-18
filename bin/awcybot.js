@@ -11,7 +11,13 @@ const cmdLogic = require('./commands/cmdlogic.js');
 const username = process.env.KB_USERNAME;
 const paperkey = process.env.KB_PAPERKEY;
 const teamName = process.env.KB_TEAMNAME;
+const subteamName = process.env.AUTOMAGIC_SUBTEAM;
 const contentFolder = process.env.KB_CONTENT;
+
+const ignoredContent = [
+    "welcome",
+    "waiting_room_welcome"
+];
 
 const bot = new Bot();
 
@@ -36,7 +42,8 @@ async function main() {
 
         console.log('message recieved: ' + msg.sender.username)
         const isAdmin = adminIds.some(aId => aId === msg.sender.uid);
-        const isTeamChat = msg.channel.name === teamName;
+        const isTeamChat = msg.channel.name === teamName
+            || msg.channel.name === subteamName;
 
         if (!isAdmin && !isTeamChat) {
             return;
@@ -46,11 +53,9 @@ async function main() {
             const match = msg.content.text.body.match(cmd.re);
             if(match) {
                 if (!cmd.adminOnly || isAdmin) {
-                    cmd.handle(msg, match, bot);
+                    cmd.handle(msg, match, bot, content);
                 } else {
-                    await bot.chat.send(msg.conversationId, {
-                        body: "nah"
-                    });
+                    console.log("Insufficent privs");
                 }
 
                 break;
@@ -88,7 +93,7 @@ function loadBuiltInCommands() {
         if ('custom' in cmd) {
             cmd.custom.forEach(customName => {
                 if (customName in cmd) {
-                    cmdLogic.addCustomFunc(cmd[customName], bot);
+                    cmdLogic.addCustomFunc(cmd[customName], bot, () => content);
                     otherFunc++;
                 }
             });
@@ -126,6 +131,10 @@ async function updateCommands() {
     let nCommands = {};
     let commandCount = 0;
     for (const contentKey in content) {
+        if (ignoredContent.some(it => it === contentKey)) {
+            continue;
+        }
+
         commandCount++;
         nCommands = {
             ...nCommands,
