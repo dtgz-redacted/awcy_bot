@@ -1,3 +1,4 @@
+const timers = require("timers");
 const teamName = process.env.KB_TEAMNAME;
 exports.commands = ['adduser'];
 
@@ -13,12 +14,14 @@ exports['adduser'] = {
                 usernames: [{username: username, role: "reader"}]
             });
 
-            await bot.chat.send({
-                name: teamName,
-                membersType: "team",
-                topicName:  "general"
-            }, {
-                body: content["welcome"].replace("{username}", username)
-            });
+            timers.setTimeout(async () => {
+                await bot.chat.send({
+                    name: teamName,
+                    membersType: "team",
+                    topicName:  "general"
+                }, {
+                    body: content["welcome"].replace("{username}", username)
+                });
+            }, 60000);
         }
     };
