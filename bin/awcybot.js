@@ -61,7 +61,7 @@ async function main() {
                 break;
             }
         }
-    }, e => console.error(e));
+    }, e => console.error(e), {hideExploding: false, showLocal: true});
 }
 
 function loadBuiltInCommands() {
