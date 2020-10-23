@@ -11,7 +11,7 @@ const cmdLogic = require('./commands/cmdlogic.js');
 const username = process.env.KB_USERNAME;
 const paperkey = process.env.KB_PAPERKEY;
 const teamName = process.env.KB_TEAMNAME;
-const subteamName = process.env.AUTOMAGIC_SUBTEAM;
+const subteamName = teamName+'.'+process.env.AUTOMAGIC_SUBTEAM;
 const contentFolder = process.env.KB_CONTENT;
 
 const ignoredContent = [
@@ -25,6 +25,7 @@ let content = {};
 let commands = {};
 let adminIds = [];
 let builtInCommands = {};
+let firstRun = 0;
 
 async function main() {
     console.log('initiating bot...')
@@ -42,12 +43,6 @@ async function main() {
 
         console.log('message recieved: ' + msg.sender.username)
         const isAdmin = adminIds.some(aId => aId === msg.sender.uid);
-        const isTeamChat = msg.channel.name === teamName
-            || msg.channel.name === subteamName;
-
-        if (!isAdmin && !isTeamChat) {
-            return;
-        }
 
         for (const cmd of Object.values(commands)) {
             const match = msg.content.text.body.match(cmd.re);
@@ -66,7 +61,6 @@ async function main() {
 
 function loadBuiltInCommands() {
     console.log("Loading built in commands...");
-
     let otherFunc = 0;
     let commandCount = 0;
     let cmd_directory = path.join(__dirname, 'commands');
@@ -107,27 +101,35 @@ async function updateAppData() {
     await updateAdminIds();
     await updateContent();
     await updateCommands();
+    firstRun = 1;
 }
 
 async function updateAdminIds() {
-    console.log('Updating Admin and Owners List...')
-    const result = await bot.team.listTeamMemberships({team: teamName});
-    if (!result.members.admins && !result.members.owners){
+    if (!firstRun) {
+      console.log('Updating Admin and Owners List...')
+    }
+    const result1 = await bot.team.listTeamMemberships({team: teamName});
+    const result2 = await bot.team.listTeamMemberships({team: subteamName});
+    let sowner = result1.members.owners;
+    let sadmin = result1.members.admins;
+    let ssowner = result2.members.owners;
+    let ssadmin = result2.members.admins;
+    if (!sadmin && !sowner && !ssadmin && !ssowner){
         console.log("error no admins or owners found!");
         return;
     }
-
-    let sowner = result.members.owners;
-    let sadmin = result.members.admins;
     adminIds = [
         ...(sowner ? sowner.map(it => it.uv.uid) : []),
-        ...(sadmin ? sadmin.map(it => it.uv.uid) : [])
+        ...(sadmin ? sadmin.map(it => it.uv.uid) : []),
+        ...(ssowner ? ssowner.map(it => it.uv.uid) : []),
+        ...(ssadmin ? ssadmin.map(it => it.uv.uid) : [])
     ];
 }
 
 async function updateCommands() {
-    console.log('updating txt commands...')
-
+    if (!firstRun) {
+      console.log('updating txt commands...')
+    }
     let nCommands = {};
     let commandCount = 0;
     for (const contentKey in content) {
@@ -164,12 +166,15 @@ async function updateCommands() {
             }))
         }]
     });
-
-    console.log(`Updated ${commandCount} txt commands.`);
+    if (!firstRun) {
+      console.log(`Updated ${commandCount} txt commands.`);
+    }
 }
 
 async function updateContent() {
-    console.log('updating content...')
+    if (!firstRun) {
+      console.log('updating content...')
+    }
     const workingDir = bot["_workingDir"];
     const fileList = (await keybaseExec(workingDir, null,
         ["fs", "ls", `/keybase/team/${teamName}/${contentFolder}`, "--one"]))
