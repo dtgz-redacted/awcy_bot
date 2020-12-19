@@ -57,11 +57,12 @@ exports.automagic = function(bot, getContent) {
 			}
 
 			const username = subjectMatch.groups["username"];
+			let usernameList = " ";
 			await bot.team.addMembers({
 				team: `${teamName}.${subteamName}`,
 				usernames: [{ username: username, role: "reader" }]
 			});
-
+			usernameList += ",@"+ username
 			timers.setTimeout(async () => {
 				await bot.chat.send(
 					{
@@ -70,10 +71,11 @@ exports.automagic = function(bot, getContent) {
 						topicName: "general"
 					},
 					{
-						body: getContent()["waiting_room_welcome"].replace("{username}", username)
+						body: getContent()["waiting_room_welcome"].replace("{username}", usernameList.replace('@ ,',''))
 					}
 				);
-			}, 60000);
+				usernameList = null;
+			}, 300000);
 		}
 
 		connection.end();
