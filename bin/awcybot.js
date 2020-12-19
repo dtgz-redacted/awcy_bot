@@ -55,7 +55,10 @@ async function main() {
 				}
 			}
 		},
-		e => console.error(e),
+		e => {
+      if(e == "Error: This exploding message is not available"){return}
+      console.log(e)
+    },
 		{ hideExploding: false, showLocal: true }
 	);
 }
