@@ -4,7 +4,7 @@ exports.commands = ["adduser"];
 
 exports["adduser"] = {
 	re: /^!adduser @(?<username>\S+)\s*$/,
-	description: "add a new member",
+	description: "add a new member to the main DEV TEAM!",
 	usage: "[@username]",
 	adminOnly: true,
 	handle: async (_msg, match, bot, content) => {
