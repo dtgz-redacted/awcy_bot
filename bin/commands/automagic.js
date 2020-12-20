@@ -23,6 +23,8 @@ const fromRe = /^.*<(?<email>\S+)>$/;
 const subjectRe = /^(?<username>\S+)(\s\(.*\))? wants to join team (?<team>\S+)$/;
 const keybaseAddr = "notify@keybase.io";
 
+let usernames = [];
+
 exports.custom = ["automagic"];
 exports.automagic = function(bot, getContent) {
 	if (!automagic) {
@@ -62,20 +64,30 @@ exports.automagic = function(bot, getContent) {
 				usernames: [{ username: username, role: "reader" }]
 			});
 
-			timers.setTimeout(async () => {
-				await bot.chat.send(
-					{
-						name: `${teamName}.${subteamName}`,
-						membersType: "team",
-						topicName: "general"
-					},
-					{
-						body: getContent()["waiting_room_welcome"].replace("{username}", username)
-					}
-				);
-			}, 60000);
+			usernames.push(`@${username}`);
 		}
 
 		connection.end();
 	}, parseInt(interval));
+
+	timers.setInterval(() => {
+		if (!usernames.length) {
+			return;
+		}
+
+		const usernamesStr = usernames.join(', ');
+		usernames = [];
+		timers.setTimeout(async () => {
+			await bot.chat.send(
+				{
+					name: `${teamName}.${subteamName}`,
+					membersType: "team",
+					topicName: "general"
+				},
+				{
+					body: getContent()["waiting_room_welcome"].replace("{username}", usernamesStr)
+				}
+			);
+		}, 60000);
+	}, 300000);
 };
