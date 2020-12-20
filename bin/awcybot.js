@@ -43,7 +43,8 @@ async function main() {
 			const isAdmin = adminIds.some(aId => aId === msg.sender.uid);
 
 			for (const cmd of Object.values(commands)) {
-				const match = msg.content.text.body.match(cmd.re);
+				let msgTxt = msg.content.text.body.toLowerCase();
+				const match = msgTxt.match(cmd.re);
 				if (match) {
 					if (!cmd.adminOnly || isAdmin) {
 						cmd.handle(msg, match, bot, content);
@@ -81,8 +82,8 @@ function loadBuiltInCommands() {
 
 		if ("commands" in cmd) {
 			cmd.commands.forEach(cmdName => {
-				if (cmdName in cmd) {
-					cmdLogic.addCommand(cmdName, cmd[cmdName], builtInCommands);
+				if (cmdName.toLowerCase() in cmd) {
+					cmdLogic.addCommand(cmdName.toLowerCase(), cmd[cmdName.toLowerCase()], builtInCommands);
 					commandCount++;
 				}
 			});
@@ -90,8 +91,8 @@ function loadBuiltInCommands() {
 
 		if ("custom" in cmd) {
 			cmd.custom.forEach(customName => {
-				if (customName in cmd) {
-					cmdLogic.addCustomFunc(cmd[customName], bot, () => content);
+				if (customName.toLowerCase() in cmd) {
+					cmdLogic.addCustomFunc(cmd[customName.toLowerCase()], bot, () => content);
 					otherFunc++;
 				}
 			});
@@ -145,7 +146,7 @@ async function updateCommands() {
 		nCommands = {
 			...nCommands,
 			[contentKey]: {
-				re: new RegExp(`^!${regexEscape(contentKey)}\\s*$`),
+				re: new RegExp(`^!${regexEscape(contentKey.toLowerCase())}\\s*$`),
 				adminOnly: false,
 				handle: async msg =>
 					await bot.chat.send(msg.conversationId, {
@@ -166,7 +167,7 @@ async function updateCommands() {
 			{
 				type: "public",
 				commands: Object.keys(commands).map(it => ({
-					name: it,
+					name: it.toLowerCase(),
 					description: commands[it].description,
 					usage: commands[it].usage
 				}))
